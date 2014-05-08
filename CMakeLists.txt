@@ -22,18 +22,21 @@ SET(CUDA_NVCC_FLAGS "-arch=sm_20" CACHE STRING "nvcc flags" FORCE)
 
 add_subdirectory(src)
 
-set(KinectSDK_INCLUDE "default value" CACHE PATH "Include directories for Kinect2 SDK")
-set(KinectSDK_LIB "default value" CACHE PATH "Include directories for Kinect2 SDK")
+set(KinectSDK_INCLUDE "default value" CACHE PATH "Include directory for Kinect2 SDK")
+set(KinectSDK_LIB "default value" CACHE PATH "Library directory for Kinect2 SDK")
+
+set(PCL_Kinect2SDK_INCLUDE "../PCL_Kinect2SDK/include" CACHE PATH "Include directory for PCL_Kinect2SDK project")
+set(PCL_Kinect2SDK_LIBDIR "../PCL_Kinect2SDK/build" CACHE PATH "Library directory for PCL_Kinect2SDK project")
 
 include_directories(${OpenCV_INCLUDE_DIRS})
 include_directories(${PCL_INCLUDE_DIRS})
 include_directories(${PCL_KinectKinfu_SOURCE_DIR}/include)
-include_directories(../PCL_Kinect2SDK/include)
+include_directories(${PCL_Kinect2SDK_INCLUDE})
 include_directories(${CUDA_TOOLKIT_INCLUDE})
 include_directories(${KinectSDK_INCLUDE})
 
 link_directories(${PCL_LIBRARY_DIRS})
-link_directories(../../PCL_Kinect2SDK/build/)
+link_directories(${PCL_Kinect2SDK_LIBDIR})
 link_directories(${KinectSDK_LIB})
 
 add_definitions(${PCL_DEFINITIONS})

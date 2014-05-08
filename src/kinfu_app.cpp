@@ -395,7 +395,13 @@ struct ImageView
     if (accumulate_views_)
     {
       views_.push_back (cv::Mat ());
-      cv::cvtColor (cv::Mat (480, 640, CV_8UC3, (void*)&view_host_[0]), views_.back (), CV_RGB2GRAY);
+
+//#if ((CV_MAJOR_VERSION > 2) || ((CV_MINOR_VERSION == 4) && CV_MINOR_VERSION == 2
+	  cv::cvtColor (cv::Mat (480, 640, CV_8UC3, (void*)&view_host_[0]), views_.back (), cv::COLOR_RGB2GRAY);
+//#else
+//	  cv::cvtColor (cv::Mat (480, 640, CV_8UC3, (void*)&view_host_[0]), views_.back (), cv::CV_RGB2GRAY);
+//#endif
+
       //cv::copy(cv::Mat(480, 640, CV_8UC3, (void*)&view_host_[0]), views_.back());
     }
 #endif
@@ -1197,6 +1203,8 @@ main (int argc, char* argv[])
   pcl::gpu::setDevice (device);
   pcl::gpu::printShortCudaDeviceInfo (device);
 
+  bool depthOnlyMode = true;
+
 //  if (checkIfPreFermiGPU(device))
 //    return cout << endl << "Kinfu is supported only for Fermi and Kepler arhitectures. It is not even compiled for pre-Fermi by default. Exiting..." << endl, 1;
   
@@ -1209,7 +1217,7 @@ main (int argc, char* argv[])
   {    
     if (pc::parse_argument (argc, argv, "-dev", openni_device) > 0)
     {
-      capture.reset (new pcl::Microsoft2Grabber ());
+      capture.reset (new pcl::Microsoft2Grabber (0, depthOnlyMode));
     }
     //else if (pc::parse_argument (argc, argv, "-oni", oni_file) > 0)
     //{
@@ -1235,7 +1243,7 @@ main (int argc, char* argv[])
     }
     else
     {
-      capture.reset( new pcl::Microsoft2Grabber() );
+      capture.reset( new pcl::Microsoft2Grabber(0, depthOnlyMode) );
         
       //triggered_capture = true; capture.reset( new pcl::ONIGrabber("d:/onis/20111013-224932.oni", true, ! triggered_capture) );
       //triggered_capture = true; capture.reset( new pcl::ONIGrabber("d:/onis/reg20111229-180846.oni, true, ! triggered_capture) );    
