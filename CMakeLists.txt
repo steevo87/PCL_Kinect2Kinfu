@@ -24,8 +24,8 @@ SET(CUDA_NVCC_FLAGS "-arch=sm_20" CACHE STRING "nvcc flags" FORCE)
 add_subdirectory(src)
 
 
-set(KinectSDK_INCLUDE "C:/Program Files/Microsoft SDKs/Kinect/v2.0-DevPreview1404/inc" CACHE PATH "Include directory for Kinect2 SDK")
-set(KinectSDK_LIB "C:/Program Files/Microsoft SDKs/Kinect/v2.0-DevPreview1404/lib/x64" CACHE PATH "Library directory for Kinect2 SDK")
+set(KinectSDK_INCLUDE "$ENV{KINECTSDK20_DIR}inc" CACHE PATH "Include directory for Kinect2 SDK")
+set(KinectSDK_LIB "$ENV{KINECTSDK20_DIR}lib/x64" CACHE PATH "Library directory for Kinect2 SDK")
 
 set(PCL_Kinect2SDK_INCLUDE "../PCL_Kinect2SDK/include" CACHE PATH "Include directory for PCL_Kinect2SDK project")
 set(PCL_Kinect2SDK_LIBDIR "C:/Users/steph_000/Documents/GitHub/BUILDS/PCL_Kinect2SDK" CACHE PATH "Library directory for PCL_Kinect2SDK project")
