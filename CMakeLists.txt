@@ -10,12 +10,54 @@ ELSE()
    SET(CMAKE_FIND_LIBRARY_SUFFIXES .a)
 ENDIF()
 
-set(OPENNI_LIBRARY "C:/Program Files/OpenNI/Lib64/OpenNI64.lib")
-set(OpenCV_DIR "C:/Users/ur10/Downloads/opencv/build")
-set(PCL_DIR "C:/Users/ur10/Downloads/Repositories/pcl-trunk/build64")
+set(OPENNI_LIBRARY "C:/Program Files/OpenNI/Lib64/openNI64.lib" CACHE STRING "..." FORCE)
+
+# THESE ARE THE CORRECT ADDRESSES FOR THE UR10 PC, AND YOU MIGHT NEED TO USE THEM TO OVERWRITE THE AUTOMATIC VALUES
+#set(OpenCV_DIR "C:/Users/ur10/Downloads/opencv/build")
+#set(PCL_DIR "C:/Users/ur10/Downloads/Repositories/pcl-trunk/build64")
 
 find_package(PCL 1.7 REQUIRED)
-find_package( OpenCV REQUIRED )
+
+find_package( OpenCV HINTS "$ENV{USERPROFILE}/Documents/GitHub/BUILDS/OpenCV" "C:/Users/Public/Documents/opencv/build") 
+	
+string(REGEX REPLACE "/Release/Release" "/Release" OpenCV_LIB_DIR_OPT "${OpenCV_LIB_DIR_OPT}")
+string(REGEX REPLACE "/Debug/Debug" "/Debug" OpenCV_LIB_DIR_DBG "${OpenCV_LIB_DIR_DBG}")
+
+IF(OpenCV_FOUND AND ("${OpenCV_DIR}" STREQUAL "${OpenCV_CONFIG_PATH}") AND (NOT("${OpenCV_LIB_DIR_DBG}" STREQUAL "/Debug")) AND (NOT("${OpenCV_LIB_DIR_OPT}" STREQUAL "/Release")) )
+	message(STATUS "OpenCV Found!")
+	string(REGEX REPLACE "/lib" "/bin" OpenCV_BIN_DIR_OPT "${OpenCV_LIB_DIR_OPT}")
+	string(REGEX REPLACE "/lib" "/bin" OpenCV_BIN_DIR_DBG "${OpenCV_LIB_DIR_DBG}")
+ELSEIF(EXISTS "${OpenCV_DIR}/")
+	message(WARNING "OpenCV not entirely found, but directory address <OpenCV_DIR> located and so assuming local build at ${OpenCV_DIR}")
+	
+	IF( (NOT EXISTS "${OpenCV_DIR}/lib/Debug/") AND (NOT EXISTS "${OpenCV_DIR}/lib/Release/") )
+		MESSAGE(FATAL_ERROR "Provided path for OpenCV does not appear to contain valid debug OR release libraries!")
+	ENDIF()
+	
+	SET(OpenCV_LIB_DIR_OPT "${OpenCV_DIR}/lib/Release" CACHE STRING "..." FORCE)
+	SET(OpenCV_LIB_DIR_DBG "${OpenCV_DIR}/lib/Debug" CACHE STRING "..." FORCE)
+	SET(OpenCV_3RDPARTY_LIB_DIR_OPT "${OpenCV_DIR}/lib/Release" CACHE STRING "..." FORCE)
+	SET(OpenCV_3RDPARTY_LIB_DIR_DBG "${OpenCV_DIR}/lib/Debug" CACHE STRING "..." FORCE)
+	
+	LIST(APPEND _OpenCV_LIB_PATH "${OpenCV_DIR}/bin/Debug")
+	LIST(APPEND _OpenCV_LIB_PATH "${OpenCV_DIR}/bin/Release")
+	
+	SET(OPENCV_FOUND TRUE CACHE BOOL "..." FORCE)
+	SET(OpenCV_FOUND TRUE CACHE BOOL "..." FORCE)
+	
+	SET(OpenCV_BIN_DIR_OPT "${OpenCV_DIR}/bin/Release")
+	SET(OpenCV_BIN_DIR_DBG "${OpenCV_DIR}/bin/Debug")
+	SET(OpenCV_CONFIG_PATH "${OpenCV_DIR}" CACHE STRING "..." FORCE)
+ELSE()
+	MESSAGE(FATAL_ERROR "OpenCV not found! Please set the <OpenCV_DIR> variable to the OpenCV build directory.")
+ENDIF()
+
+IF(OpenCV_FOUND)
+	include_directories(${OpenCV_INCLUDE_DIRS})
+	link_directories(${_OpenCV_LIB_PATH})
+	STRING(REGEX REPLACE "\\." "" OPENCV_VER "${OpenCV_VERSION}")
+ENDIF()
+
 FIND_PACKAGE(CUDA REQUIRED)
  
 SET(CUDA_NVCC_FLAGS "-arch=sm_20" CACHE STRING "nvcc flags" FORCE)
@@ -54,55 +96,59 @@ list(REMOVE_DUPLICATES PCL_KinectKinfu_INCLUDE_DIRS)
 
 include_directories(${PCL_KinectKinfu_INCLUDE_DIRS})
 
-add_executable (PCL_KinectKinfu ${PCL_KinectKinfu_SOURCES} ${PCL_KinectKinfu_HEADERS})
-target_link_libraries (PCL_KinectKinfu ${CUDA_CUDA_LIBRARY} ${CUDA_CUDART_LIBRARY} ${PCL_LIBRARIES} ${OpenCV_LIBS} Kinect20.lib debug Debug/PCL_Kinect2SDK optimized Release/PCL_Kinect2SDK)
-		
-add_custom_command(TARGET PCL_KinectKinfu POST_BUILD        		# Adds a post-build event to MyTest
-	COMMAND ${CMAKE_COMMAND} -E copy_if_different  			# which executes "cmake - E copy_if_different..."
-		"${_OpenCV_LIB_PATH}/opencv_calib3d248d.dll"      	# <--this is in-file
-		$<TARGET_FILE_DIR:PCL_KinectKinfu>)                 		# <--this is out-file path
-		
-add_custom_command(TARGET PCL_KinectKinfu POST_BUILD        		# Adds a post-build event to MyTest
-	COMMAND ${CMAKE_COMMAND} -E copy_if_different  			# which executes "cmake - E copy_if_different..."
-		"${_OpenCV_LIB_PATH}/opencv_contrib248d.dll"      	# <--this is in-file
-		$<TARGET_FILE_DIR:PCL_KinectKinfu>)                 		# <--this is out-file path
-		
-add_custom_command(TARGET PCL_KinectKinfu POST_BUILD        		# Adds a post-build event to MyTest
-	COMMAND ${CMAKE_COMMAND} -E copy_if_different  			# which executes "cmake - E copy_if_different..."
-		"${_OpenCV_LIB_PATH}/opencv_core248d.dll"      	# <--this is in-file
-		$<TARGET_FILE_DIR:PCL_KinectKinfu>)  # <--this is out-file path
-		
-add_custom_command(TARGET PCL_KinectKinfu POST_BUILD
-	COMMAND ${CMAKE_COMMAND} -E copy_if_different
-		"${_OpenCV_LIB_PATH}/opencv_features2d248d.dll"
-		$<TARGET_FILE_DIR:PCL_KinectKinfu>)
-		
-add_custom_command(TARGET PCL_KinectKinfu POST_BUILD
-	COMMAND ${CMAKE_COMMAND} -E copy_if_different
-		"${_OpenCV_LIB_PATH}/opencv_flann248d.dll"
-		$<TARGET_FILE_DIR:PCL_KinectKinfu>)
-		
-add_custom_command(TARGET PCL_KinectKinfu POST_BUILD
-	COMMAND ${CMAKE_COMMAND} -E copy_if_different
-		"${_OpenCV_LIB_PATH}/opencv_highgui248d.dll"
-		$<TARGET_FILE_DIR:PCL_KinectKinfu>)
-		
-add_custom_command(TARGET PCL_KinectKinfu POST_BUILD
-	COMMAND ${CMAKE_COMMAND} -E copy_if_different
-		"${_OpenCV_LIB_PATH}/opencv_imgproc248d.dll"
-		$<TARGET_FILE_DIR:PCL_KinectKinfu>)
-		
-add_custom_command(TARGET PCL_KinectKinfu POST_BUILD
-	COMMAND ${CMAKE_COMMAND} -E copy_if_different
-		"${_OpenCV_LIB_PATH}/opencv_ml248d.dll"
-		$<TARGET_FILE_DIR:PCL_KinectKinfu>)
-		
-add_custom_command(TARGET PCL_KinectKinfu POST_BUILD
-	COMMAND ${CMAKE_COMMAND} -E copy_if_different
-		"${_OpenCV_LIB_PATH}/opencv_objdetect248d.dll"
-		$<TARGET_FILE_DIR:PCL_KinectKinfu>)
-		
-add_custom_command(TARGET PCL_KinectKinfu POST_BUILD
-	COMMAND ${CMAKE_COMMAND} -E copy_if_different
-		"${_OpenCV_LIB_PATH}/opencv_video248d.dll"
-		$<TARGET_FILE_DIR:PCL_KinectKinfu>)
+SET(EXEC_NAME "PCL_KinectKinfu")
+add_executable (${EXEC_NAME} ${PCL_KinectKinfu_SOURCES} ${PCL_KinectKinfu_HEADERS})
+target_link_libraries (${EXEC_NAME} ${CUDA_CUDA_LIBRARY} ${CUDA_CUDART_LIBRARY} ${PCL_LIBRARIES} ${OpenCV_LIBS} Kinect20.lib debug Debug/PCL_Kinect2SDK optimized Release/PCL_Kinect2SDK)
+
+# Custom build steps to move DLL into execution directory
+add_custom_command(TARGET ${EXEC_NAME} POST_BUILD COMMAND ${CMAKE_COMMAND} -E copy_if_different "${PCL_DIR}/bin/pcl_common_debug.dll" $<TARGET_FILE_DIR:${EXEC_NAME}>)
+add_custom_command(TARGET ${EXEC_NAME} POST_BUILD COMMAND ${CMAKE_COMMAND} -E copy_if_different "${PCL_DIR}/bin/pcl_features_debug.dll" $<TARGET_FILE_DIR:${EXEC_NAME}>)
+add_custom_command(TARGET ${EXEC_NAME} POST_BUILD COMMAND ${CMAKE_COMMAND} -E copy_if_different "${PCL_DIR}/bin/pcl_search_debug.dll" $<TARGET_FILE_DIR:${EXEC_NAME}>)
+add_custom_command(TARGET ${EXEC_NAME} POST_BUILD COMMAND ${CMAKE_COMMAND} -E copy_if_different "${PCL_DIR}/bin/pcl_visualization_debug.dll" $<TARGET_FILE_DIR:${EXEC_NAME}>)
+add_custom_command(TARGET ${EXEC_NAME} POST_BUILD COMMAND ${CMAKE_COMMAND} -E copy_if_different "${PCL_DIR}/bin/pcl_octree_debug.dll" $<TARGET_FILE_DIR:${EXEC_NAME}>)
+add_custom_command(TARGET ${EXEC_NAME} POST_BUILD COMMAND ${CMAKE_COMMAND} -E copy_if_different "${PCL_DIR}/bin/pcl_kdtree_debug.dll" $<TARGET_FILE_DIR:${EXEC_NAME}>)
+add_custom_command(TARGET ${EXEC_NAME} POST_BUILD COMMAND ${CMAKE_COMMAND} -E copy_if_different "${PCL_DIR}/bin/pcl_io_debug.dll" $<TARGET_FILE_DIR:${EXEC_NAME}>)
+add_custom_command(TARGET ${EXEC_NAME} POST_BUILD COMMAND ${CMAKE_COMMAND} -E copy_if_different "${PCL_DIR}/bin/pcl_io_ply_debug.dll" $<TARGET_FILE_DIR:${EXEC_NAME}>)
+add_custom_command(TARGET ${EXEC_NAME} POST_BUILD COMMAND ${CMAKE_COMMAND} -E copy_if_different "${PCL_DIR}/bin/pcl_gpu_containers_debug.dll" $<TARGET_FILE_DIR:${EXEC_NAME}>)
+add_custom_command(TARGET ${EXEC_NAME} POST_BUILD COMMAND ${CMAKE_COMMAND} -E copy_if_different "${PCL_DIR}/bin/pcl_gpu_kinfu_debug.dll" $<TARGET_FILE_DIR:${EXEC_NAME}>)
+
+add_custom_command(TARGET ${EXEC_NAME} POST_BUILD COMMAND ${CMAKE_COMMAND} -E copy_if_different "${PCL_DIR}/bin/pcl_common_release.dll" $<TARGET_FILE_DIR:${EXEC_NAME}>)
+add_custom_command(TARGET ${EXEC_NAME} POST_BUILD COMMAND ${CMAKE_COMMAND} -E copy_if_different "${PCL_DIR}/bin/pcl_features_release.dll" $<TARGET_FILE_DIR:${EXEC_NAME}>)
+add_custom_command(TARGET ${EXEC_NAME} POST_BUILD COMMAND ${CMAKE_COMMAND} -E copy_if_different "${PCL_DIR}/bin/pcl_search_release.dll" $<TARGET_FILE_DIR:${EXEC_NAME}>)
+add_custom_command(TARGET ${EXEC_NAME} POST_BUILD COMMAND ${CMAKE_COMMAND} -E copy_if_different "${PCL_DIR}/bin/pcl_visualization_release.dll" $<TARGET_FILE_DIR:${EXEC_NAME}>)
+add_custom_command(TARGET ${EXEC_NAME} POST_BUILD COMMAND ${CMAKE_COMMAND} -E copy_if_different "${PCL_DIR}/bin/pcl_octree_release.dll" $<TARGET_FILE_DIR:${EXEC_NAME}>)
+add_custom_command(TARGET ${EXEC_NAME} POST_BUILD COMMAND ${CMAKE_COMMAND} -E copy_if_different "${PCL_DIR}/bin/pcl_kdtree_release.dll" $<TARGET_FILE_DIR:${EXEC_NAME}>)
+add_custom_command(TARGET ${EXEC_NAME} POST_BUILD COMMAND ${CMAKE_COMMAND} -E copy_if_different "${PCL_DIR}/bin/pcl_io_release.dll" $<TARGET_FILE_DIR:${EXEC_NAME}>)
+add_custom_command(TARGET ${EXEC_NAME} POST_BUILD COMMAND ${CMAKE_COMMAND} -E copy_if_different "${PCL_DIR}/bin/pcl_io_ply_release.dll" $<TARGET_FILE_DIR:${EXEC_NAME}>)
+add_custom_command(TARGET ${EXEC_NAME} POST_BUILD COMMAND ${CMAKE_COMMAND} -E copy_if_different "${PCL_DIR}/bin/pcl_gpu_containers_release.dll" $<TARGET_FILE_DIR:${EXEC_NAME}>)
+add_custom_command(TARGET ${EXEC_NAME} POST_BUILD COMMAND ${CMAKE_COMMAND} -E copy_if_different "${PCL_DIR}/bin/pcl_gpu_kinfu_release.dll" $<TARGET_FILE_DIR:${EXEC_NAME}>)
+
+add_custom_command(TARGET ${EXEC_NAME} POST_BUILD COMMAND ${CMAKE_COMMAND} -E copy_if_different "${OpenCV_BIN_DIR_OPT}/opencv_core${OPENCV_VER}.dll" $<TARGET_FILE_DIR:${EXEC_NAME}>)
+add_custom_command(TARGET ${EXEC_NAME} POST_BUILD COMMAND ${CMAKE_COMMAND} -E copy_if_different "${OpenCV_BIN_DIR_DBG}/opencv_core${OPENCV_VER}d.dll" $<TARGET_FILE_DIR:${EXEC_NAME}>)
+	
+add_custom_command(TARGET ${EXEC_NAME} POST_BUILD COMMAND ${CMAKE_COMMAND} -E copy_if_different "${OpenCV_BIN_DIR_OPT}/opencv_calib3d${OPENCV_VER}.dll" $<TARGET_FILE_DIR:${EXEC_NAME}>)
+add_custom_command(TARGET ${EXEC_NAME} POST_BUILD COMMAND ${CMAKE_COMMAND} -E copy_if_different "${OpenCV_BIN_DIR_DBG}/opencv_calib3d${OPENCV_VER}d.dll" $<TARGET_FILE_DIR:${EXEC_NAME}>)
+
+add_custom_command(TARGET ${EXEC_NAME} POST_BUILD COMMAND ${CMAKE_COMMAND} -E copy_if_different "${OpenCV_BIN_DIR_OPT}/opencv_contrib${OPENCV_VER}.dll" $<TARGET_FILE_DIR:${EXEC_NAME}>)
+add_custom_command(TARGET ${EXEC_NAME} POST_BUILD COMMAND ${CMAKE_COMMAND} -E copy_if_different "${OpenCV_BIN_DIR_DBG}/opencv_contrib${OPENCV_VER}d.dll" $<TARGET_FILE_DIR:${EXEC_NAME}>)
+
+add_custom_command(TARGET ${EXEC_NAME} POST_BUILD COMMAND ${CMAKE_COMMAND} -E copy_if_different "${OpenCV_BIN_DIR_OPT}/opencv_features2d${OPENCV_VER}.dll" $<TARGET_FILE_DIR:${EXEC_NAME}>)
+add_custom_command(TARGET ${EXEC_NAME} POST_BUILD COMMAND ${CMAKE_COMMAND} -E copy_if_different "${OpenCV_BIN_DIR_DBG}/opencv_features2d${OPENCV_VER}d.dll" $<TARGET_FILE_DIR:${EXEC_NAME}>)
+
+add_custom_command(TARGET ${EXEC_NAME} POST_BUILD COMMAND ${CMAKE_COMMAND} -E copy_if_different "${OpenCV_BIN_DIR_OPT}/opencv_flann${OPENCV_VER}.dll" $<TARGET_FILE_DIR:${EXEC_NAME}>)
+add_custom_command(TARGET ${EXEC_NAME} POST_BUILD COMMAND ${CMAKE_COMMAND} -E copy_if_different "${OpenCV_BIN_DIR_DBG}/opencv_flann${OPENCV_VER}d.dll" $<TARGET_FILE_DIR:${EXEC_NAME}>)
+
+add_custom_command(TARGET ${EXEC_NAME} POST_BUILD COMMAND ${CMAKE_COMMAND} -E copy_if_different "${OpenCV_BIN_DIR_OPT}/opencv_highgui${OPENCV_VER}.dll" $<TARGET_FILE_DIR:${EXEC_NAME}>)
+add_custom_command(TARGET ${EXEC_NAME} POST_BUILD COMMAND ${CMAKE_COMMAND} -E copy_if_different "${OpenCV_BIN_DIR_DBG}/opencv_highgui${OPENCV_VER}d.dll" $<TARGET_FILE_DIR:${EXEC_NAME}>)
+
+add_custom_command(TARGET ${EXEC_NAME} POST_BUILD COMMAND ${CMAKE_COMMAND} -E copy_if_different "${OpenCV_BIN_DIR_OPT}/opencv_imgproc${OPENCV_VER}.dll" $<TARGET_FILE_DIR:${EXEC_NAME}>)
+add_custom_command(TARGET ${EXEC_NAME} POST_BUILD COMMAND ${CMAKE_COMMAND} -E copy_if_different "${OpenCV_BIN_DIR_DBG}/opencv_imgproc${OPENCV_VER}d.dll" $<TARGET_FILE_DIR:${EXEC_NAME}>)
+
+add_custom_command(TARGET ${EXEC_NAME} POST_BUILD COMMAND ${CMAKE_COMMAND} -E copy_if_different "${OpenCV_BIN_DIR_OPT}/opencv_ml${OPENCV_VER}.dll" $<TARGET_FILE_DIR:${EXEC_NAME}>)
+add_custom_command(TARGET ${EXEC_NAME} POST_BUILD COMMAND ${CMAKE_COMMAND} -E copy_if_different "${OpenCV_BIN_DIR_DBG}/opencv_ml${OPENCV_VER}d.dll" $<TARGET_FILE_DIR:${EXEC_NAME}>)
+
+add_custom_command(TARGET ${EXEC_NAME} POST_BUILD COMMAND ${CMAKE_COMMAND} -E copy_if_different "${OpenCV_BIN_DIR_OPT}/opencv_objdetect${OPENCV_VER}.dll" $<TARGET_FILE_DIR:${EXEC_NAME}>)
+add_custom_command(TARGET ${EXEC_NAME} POST_BUILD COMMAND ${CMAKE_COMMAND} -E copy_if_different "${OpenCV_BIN_DIR_DBG}/opencv_objdetect${OPENCV_VER}d.dll" $<TARGET_FILE_DIR:${EXEC_NAME}>)
+
+add_custom_command(TARGET ${EXEC_NAME} POST_BUILD COMMAND ${CMAKE_COMMAND} -E copy_if_different "${OpenCV_BIN_DIR_OPT}/opencv_video${OPENCV_VER}.dll" $<TARGET_FILE_DIR:${EXEC_NAME}>)
+add_custom_command(TARGET ${EXEC_NAME} POST_BUILD COMMAND ${CMAKE_COMMAND} -E copy_if_different "${OpenCV_BIN_DIR_DBG}/opencv_video${OPENCV_VER}d.dll" $<TARGET_FILE_DIR:${EXEC_NAME}>)
